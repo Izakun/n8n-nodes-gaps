@@ -33,10 +33,39 @@ export class Gaps implements INodeType {
 				type: 'options',
 				noDataExpression: true,
 				options: [
-					{ name: 'Get Configuration', value: 'getConfiguration', action: 'Get the configuration' },
-					{ name: 'Get Libraries', value: 'getLibraries', action: 'Get many libraries' },
+					{ name: 'Get Libraries', value: 'getLibraries', action: 'Get libraries for a server' },
+					{ name: 'Get Movie Status', value: 'getMovieStatus', action: 'Get the movie status' },
+					{ name: 'Get Plex Movies', value: 'getPlexMovies', action: 'Get movies in a library' },
+					{
+						name: 'Get Recommended',
+						value: 'getRecommended',
+						action: 'Get recommended missing movies',
+					},
+					{ name: 'Get Search Status', value: 'getSearchStatus', action: 'Get the search status' },
 				],
-				default: 'getLibraries',
+				default: 'getMovieStatus',
+			},
+			{
+				displayName: 'Machine Identifier',
+				name: 'machineIdentifier',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Plex server machine identifier',
+				displayOptions: {
+					show: { operation: ['getLibraries', 'getPlexMovies', 'getRecommended'] },
+				},
+			},
+			{
+				displayName: 'Library Key',
+				name: 'libraryKey',
+				type: 'string',
+				default: '',
+				required: true,
+				description: 'Plex library (section) key',
+				displayOptions: {
+					show: { operation: ['getLibraries', 'getPlexMovies', 'getRecommended'] },
+				},
 			},
 		],
 	};
@@ -45,28 +74,46 @@ export class Gaps implements INodeType {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
 
-		const URL_BY_OP: Record<string, string> = {
-			getConfiguration: '/configuration',
-			getLibraries: '/libraries',
-		};
-
 		for (let i = 0; i < items.length; i++) {
 			try {
 				const credentials = await this.getCredentials('gapsApi', i);
 				const baseURL = (credentials.baseUrl as string).replace(/\/+$/, '');
 				const operation = this.getNodeParameter('operation', i) as string;
+				const param = <T>(name: string, fallback?: T) =>
+					this.getNodeParameter(name, i, fallback as T) as T;
 
-				const url = URL_BY_OP[operation];
-				if (!url) {
+				const withScope = (prefix: string) =>
+					`${prefix}/${encodeURIComponent(param<string>('machineIdentifier'))}/${encodeURIComponent(
+						param<string>('libraryKey'),
+					)}`;
+
+				const URL_BY_OP: Record<string, () => string> = {
+					getMovieStatus: () => '/movieStatus',
+					getSearchStatus: () => '/searchStatus',
+					getLibraries: () => withScope('/libraries'),
+					getPlexMovies: () => withScope('/plex/movies'),
+					getRecommended: () => withScope('/recommended'),
+				};
+
+				const build = URL_BY_OP[operation];
+				if (!build) {
 					throw new NodeOperationError(this.getNode(), `Unsupported operation: ${operation}`, {
 						itemIndex: i,
 					});
 				}
 
+				const headers: IDataObject = {};
+				if (credentials.username || credentials.password) {
+					headers.Authorization = `Basic ${Buffer.from(
+						`${credentials.username}:${credentials.password}`,
+					).toString('base64')}`;
+				}
+
 				const response = await this.helpers.httpRequest({
 					method: 'GET' as IHttpRequestMethods,
 					baseURL,
-					url,
+					url: build(),
+					headers,
 					json: true,
 				} as IHttpRequestOptions);
 
