@@ -16,7 +16,7 @@ export class Gaps implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Gaps',
 		name: 'gaps',
-		icon: { light: 'file:gaps.svg', dark: 'file:gaps.svg' },
+		icon: { light: 'file:gaps.svg', dark: 'file:gaps.dark.svg' },
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"]}}',
