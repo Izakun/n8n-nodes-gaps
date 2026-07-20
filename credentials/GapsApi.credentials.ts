@@ -1,4 +1,9 @@
-import { ICredentialType, INodeProperties } from 'n8n-workflow';
+import {
+	IAuthenticateGeneric,
+	ICredentialTestRequest,
+	ICredentialType,
+	INodeProperties,
+} from 'n8n-workflow';
 
 export class GapsApi implements ICredentialType {
 	name = 'gapsApi';
@@ -37,4 +42,23 @@ export class GapsApi implements ICredentialType {
 			description: 'HTTP Basic password (only if login is enabled in Gaps)',
 		},
 	];
+
+	test: ICredentialTestRequest = {
+		request: {
+			method: 'GET',
+			baseURL: '={{$credentials.baseUrl}}',
+			url: '/searchStatus',
+			auth: {
+				username: '={{$credentials.username}}',
+				password: '={{$credentials.password}}',
+			},
+		},
+	};
+
+	// No transport auth to inject here (handled inside the node); this block
+	// lets the node use httpRequestWithAuthentication.
+	authenticate: IAuthenticateGeneric = {
+		type: 'generic',
+		properties: {},
+	};
 }

@@ -109,7 +109,7 @@ export class Gaps implements INodeType {
 					).toString('base64')}`;
 				}
 
-				const response = await this.helpers.httpRequest({
+				const response = await this.helpers.httpRequestWithAuthentication.call(this, 'gapsApi', {
 					method: 'GET' as IHttpRequestMethods,
 					baseURL,
 					url: build(),
