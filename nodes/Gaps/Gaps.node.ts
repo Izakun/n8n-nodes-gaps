@@ -64,7 +64,7 @@ export class Gaps implements INodeType {
 				required: true,
 				description: 'Plex library (section) key',
 				displayOptions: {
-					show: { operation: ['getLibraries', 'getPlexMovies', 'getRecommended'] },
+					show: { operation: ['getPlexMovies', 'getRecommended'] },
 				},
 			},
 		],
@@ -90,7 +90,9 @@ export class Gaps implements INodeType {
 				const URL_BY_OP: Record<string, () => string> = {
 					getMovieStatus: () => '/movieStatus',
 					getSearchStatus: () => '/searchStatus',
-					getLibraries: () => withScope('/libraries'),
+					// Listing libraries only needs the server machine identifier.
+					getLibraries: () =>
+						`/libraries/${encodeURIComponent(param<string>('machineIdentifier'))}`,
 					getPlexMovies: () => withScope('/plex/movies'),
 					getRecommended: () => withScope('/recommended'),
 				};
